@@ -67,7 +67,7 @@ WHERE DATE(date) = LAST_DAY(DATE(date), MONTH) -- Selects only rows where the da
   AND DATE(date) >= '2022-01-01'               -- Start date filter
   AND DATE(date) <= '2025-03-31';              -- End date filter (inclusive of the last day of March 2025)
 ```
-![image](https://github.com/user-attachments/assets/1721381a-e2e3-4c56-be28-de366a920238)
+![image](https://github.com/user-attachments/assets/7cec31a6-d3d4-4246-9991-dee9d0c2609c)
 
 ## Analysis & Findings (Based on the Chart)
 

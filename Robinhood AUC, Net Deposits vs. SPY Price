@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robinhood AUC, Net Deposits vs. SPY Price</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column; /* Stack container and button vertically */
+            justify-content: center;
+            align-items: center;
+            min-height: 95vh; /* Ensure enough viewport height */
+            margin: 0;
+        }
+        .chart-container {
+            position: relative;
+            width: 95%; /* Use percentage for responsiveness */
+            max-width: 1100px; /* Increased max width */
+            background-color: #fff;
+            padding: 25px;
+            padding-top: 15px; /* Reduce top padding slightly as title is now in chart */
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            margin-bottom: 20px; /* Add space below the chart container */
+            /* Height will be determined by canvas aspect ratio */
+        }
+        /* Updated H1 */
+        h1 {
+            text-align: center;
+            margin-bottom: 10px; /* Reduce margin below H1 */
+            color: #333;
+            font-size: 1.5em; /* Optional: adjust size */
+        }
+        canvas {
+            display: block;
+            box-sizing: border-box;
+            /* Height is controlled by aspect ratio */
+            width: 100%;
+        }
+        /* Style for the save button */
+        #saveButton {
+            padding: 10px 20px;
+            font-size: 1em;
+            color: white;
+            background-color: #007bff; /* Blue background */
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        #saveButton:hover {
+            background-color: #0056b3; /* Darker blue on hover */
+        }
+    </style>
+</head>
+<body>
+    <div class="chart-container">
+        <h1>Robinhood AUC, Net Deposits vs. SPY Price</h1>
+        <canvas id="robinhoodChart"></canvas>
+    </div>
+
+    <button id="saveButton">Save Chart as Image</button>
+
+    <script>
+        // Data array containing date, AUC, Net Deposits, and SPY Price
+        // Renamed 'aum' key to 'auc'
+        const chartData = [
+            { date: '2022-01-01', auc: 86.8, deposits: 1.9, spy: 449.91 },
+            { date: '2022-02-01', auc: 88.9, deposits: 2.9, spy: 436.63 },
+            { date: '2022-03-01', auc: 93.1, deposits: 1.6, spy: 451.64 },
+            { date: '2022-04-01', auc: 78.5, deposits: 1.2, spy: 412.00 },
+            { date: '2022-05-01', auc: 73.9, deposits: 1.2, spy: 412.93 },
+            { date: '2022-06-01', auc: 64.2, deposits: 2.5, spy: 377.25 },
+            { date: '2022-07-01', auc: 74.6, deposits: 1.5, spy: 411.99 },
+            { date: '2022-08-01', auc: 71.0, deposits: 0.7, spy: 395.18 },
+            { date: '2022-09-01', auc: 64.6, deposits: 0.8, spy: 357.18 },
+            { date: '2022-10-01', auc: 70.2, deposits: 1.3, spy: 386.21 },
+            { date: '2022-11-01', auc: 70.2, deposits: 1.6, spy: 407.68 },
+            { date: '2022-12-01', auc: 62.2, deposits: 1.7, spy: 382.43 },
+            { date: '2023-01-01', auc: 74.7, deposits: 1.4, spy: 406.48 },
+            { date: '2023-02-01', auc: 74.7, deposits: 1.4, spy: 396.26 },
+            { date: '2023-03-01', auc: 78.4, deposits: 1.5, spy: 409.39 },
+            { date: '2023-04-01', auc: 77.4, deposits: 1.5, spy: 415.93 },
+            { date: '2023-05-01', auc: 81.8, deposits: 1.4, spy: 417.85 },
+            { date: '2023-06-01', auc: 88.8, deposits: 1.6, spy: 443.28 },
+            { date: '2023-07-01', auc: 94.5, deposits: 1.1, spy: 457.79 },
+            { date: '2023-08-01', auc: 89.7, deposits: 1.4, spy: 450.35 },
+            { date: '2023-09-01', auc: 86.5, deposits: 1.6, spy: 427.48 },
+            { date: '2023-10-01', auc: 84.6, deposits: 1.0, spy: 418.20 },
+            { date: '2023-11-01', auc: 94.4, deposits: 1.4, spy: 456.40 },
+            { date: '2023-12-01', auc: 102.6, deposits: 2.2, spy: 475.31 },
+            { date: '2024-01-01', auc: 102.4, deposits: 3.8, spy: 482.88 },
+            { date: '2024-02-01', auc: 118.7, deposits: 3.6, spy: 508.08 },
+            { date: '2024-03-01', auc: 129.6, deposits: 3.8, spy: 523.07 },
+            { date: '2024-04-01', auc: 123.3, deposits: 4.9, spy: 501.98 },
+            { date: '2024-05-01', auc: 135.0, deposits: 3.6, spy: 527.37 },
+            { date: '2024-06-01', auc: 139.7, deposits: 4.7, spy: 544.22 },
+            { date: '2024-07-01', auc: 144.5, deposits: 4.2, spy: 550.81 },
+            { date: '2024-08-01', auc: 143.6, deposits: 3.3, spy: 563.68 },
+            { date: '2024-09-01', auc: 152.2, deposits: 2.5, spy: 573.76 },
+            { date: '2024-10-01', auc: 159.7, deposits: 5.2, spy: 568.64 },
+            { date: '2024-11-01', auc: 194.6, deposits: 5.6, spy: 602.55 },
+            { date: '2024-12-01', auc: 192.9, deposits: 5.3, spy: 586.08 },
+            { date: '2025-01-01', auc: 203.7, deposits: 5.6, spy: 601.82 },
+            { date: '2025-02-01', auc: 187.4, deposits: 4.8, spy: 594.18 },
+            { date: '2025-03-01', auc: 220.6, deposits: 7.6, spy: 559.16 }
+        ];
+
+        // Get the canvas rendering context
+        const ctx = document.getElementById('robinhoodChart').getContext('2d');
+
+        // Chart.js configuration object
+        const config = {
+            type: 'line', // Specify chart type
+            data: {
+                // Map data for x-axis labels (dates)
+                labels: chartData.map(item => item.date),
+                datasets: [
+                    {
+                        // Updated label and data mapping
+                        label: 'AUC (Billion USD)',
+                        data: chartData.map(item => item.auc), // Map AUC data
+                        borderColor: 'blue',
+                        backgroundColor: 'rgba(0, 0, 255, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointBackgroundColor: 'blue',
+                        yAxisID: 'yAuc', // Updated Axis ID
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Net Deposits (Billion USD)',
+                        data: chartData.map(item => item.deposits),
+                        borderColor: 'green',
+                        backgroundColor: 'rgba(0, 128, 0, 0.1)',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 3,
+                        pointBackgroundColor: 'green',
+                        yAxisID: 'yDeposits',
+                        tension: 0.1
+                    },
+                    {
+                        label: 'SPY Closing Price (USD)',
+                        data: chartData.map(item => item.spy),
+                        borderColor: 'red',
+                        backgroundColor: 'rgba(255, 0, 0, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointBackgroundColor: 'red',
+                        yAxisID: 'ySpy',
+                        tension: 0.1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                aspectRatio: 1.8,
+                animation: {
+                    onComplete: () => {}
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        // Updated title text
+                        text: 'Robinhood AUC, Net Deposits vs. SPY Price',
+                        padding: {
+                            top: 10,
+                            bottom: 20
+                        },
+                        font: {
+                            size: 18
+                        },
+                        color: '#333'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    if (context.dataset.label.includes('SPY')) {
+                                        label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(context.parsed.y);
+                                    } else {
+                                         // Updated tooltip label check
+                                         label += context.parsed.y.toFixed(1) + ' B';
+                                    }
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'month',
+                            tooltipFormat: 'MMM yyyy',
+                            displayFormats: {
+                                month: 'MMM yy'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Date'
+                        }
+                    },
+                    // Updated Primary Left Y-axis ID and Title
+                    yAuc: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: 'AUC (Billion USD)', // Updated Title
+                            color: 'blue'
+                        },
+                        grid: {
+                             drawOnChartArea: true,
+                        },
+                         ticks: {
+                             color: 'blue'
+                         }
+                    },
+                     yDeposits: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: 'Net Deposits (Billion USD)',
+                            color: 'green'
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                        ticks: {
+                             color: 'green'
+                         }
+                    },
+                    ySpy: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        beginAtZero: false,
+                        title: {
+                            display: true,
+                            text: 'SPY Closing Price (USD)',
+                            color: 'red'
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                         ticks: {
+                             color: 'red'
+                         }
+                    }
+                }
+            }
+        };
+
+        // Create the chart instance
+        const robinhoodChart = new Chart(ctx, config);
+
+        // --- Functionality for the Save Button ---
+        const saveButton = document.getElementById('saveButton');
+        saveButton.addEventListener('click', () => {
+            const imageLink = document.createElement('a');
+            const canvas = document.getElementById('robinhoodChart');
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.fillStyle = '#FFFFFF';
+            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            tempCtx.drawImage(canvas, 0, 0);
+            imageLink.href = tempCanvas.toDataURL('image/png', 1.0);
+            // Updated download filename
+            imageLink.download = 'robinhood_auc_deposits_spy_chart_with_title.png';
+            imageLink.click();
+        });
+
+    </script>
+
+</body>
+</html>
